@@ -1,0 +1,5 @@
+.git
+.idea
+*.egg-info
+venv
+conf/*.json
