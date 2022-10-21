@@ -17,7 +17,7 @@ class TranslateMessage(beam.DoFn):
         # translate_client = translate.Client(credentials=credentials)
         translate_client = translate.Client()
         language_detected = translate_client.detect_language(element.text)
-        print str(language_detected)
+        print(str(language_detected))
         yield Log(element.timestamp,
                   element.text,
                   element.user_id,

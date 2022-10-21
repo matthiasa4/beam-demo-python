@@ -1,7 +1,7 @@
 import json
 
 def json_to_bqrecord(element):
-    print element
+    print(element)
     return \
         {
             'timestamp': element.timestamp,

@@ -1,6 +1,7 @@
 # Pipeline set-up
 
-// TODO: provide instructions to do the below:
+Currently running with Python version: 3.8.13
+
 Set up a service-account and download its credentials. Give it the following roles:
 - Dataflow Admin
 - Service Account User
