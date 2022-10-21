@@ -5,3 +5,4 @@ venv
 conf/*.json
 *.pyc
 key.json
+.vscode/
