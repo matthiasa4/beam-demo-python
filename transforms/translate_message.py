@@ -15,14 +15,20 @@ class TranslateMessage(beam.DoFn):
     def __init__(self, project_id):
         self.project_id = project_id
 
+    def setup(self):
+        self.translate_client = translate.TranslationServiceClient()
+
     def process(self, element):
-        # translate_client = translate.Client(credentials=credentials)
-        translate_client = translate.Client()
-        language_detected = translate_client.detect_language(element.text)
-        print(str(language_detected))
+        location = "global"
+        parent = f"projects/{self.project_id}/locations/{location}"
+        language_detected = self.translate_client.detect_language(
+            content=element.text,
+            parent=parent).languages[0]
+        logging.info("Translating message: " + element.text)
+
         yield Log(element.timestamp,
                   element.text,
                   element.user_id,
-                  language_detected['language'],
-                  language_detected['confidence'])
-
+                  language_detected.language_code,
+                  language_detected.confidence
+                  )
