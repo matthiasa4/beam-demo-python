@@ -12,6 +12,8 @@ from messages.log import Log
 
 
 class TranslateMessage(beam.DoFn):
+    def __init__(self, project_id):
+        self.project_id = project_id
 
     def process(self, element):
         # translate_client = translate.Client(credentials=credentials)

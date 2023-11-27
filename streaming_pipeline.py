@@ -37,6 +37,7 @@ def run(argv=None):
 
     # Set pipeline options
     pipeline_options = PipelineOptions(pipeline_args)
+    project_id = pipeline_options.get_all_options()['project']
     # We use the save_main_session option because one or more DoFn's in this
     # workflow rely on global context (e.g., a module imported at module level).
     pipeline_options.view_as(SetupOptions).save_main_session = True
@@ -50,7 +51,7 @@ def run(argv=None):
                 beam.io.ReadFromPubSub(subscription=known_args.input_subscription).with_output_types(bytes)
                 | 'Decode messages' >> beam.Map(lambda x: x.decode('utf-8'))
                 | 'Parse messages to Logs ' >> beam.ParDo(MessageToLog())
-                | 'Detect language' >> beam.ParDo(TranslateMessage()))
+                | 'Detect language' >> beam.ParDo(TranslateMessage(project_id))
 
     (messages   | 'Convert Log to BigQuery records' >> beam.Map(json_to_bqrecords.json_to_bqrecord)
                 | 'Write Logs to BigQuery' >> beam.io.WriteToBigQuery(
