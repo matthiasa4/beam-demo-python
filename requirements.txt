@@ -1,2 +1,2 @@
-apache-beam[gcp]==2.41.0
-google-cloud-translate==1.7.0
+apache-beam[gcp]==2.52.0
+google-cloud-translate==3.12.1
