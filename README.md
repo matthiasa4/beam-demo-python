@@ -27,11 +27,12 @@ gcloud projects add-iam-policy-binding $GCP_PROJECT --member="serviceAccount:$SA
 Launch Dataflow job by executing:
 ```
 python streaming_pipeline.py \
-    --output=matthias-sandbox:devfest_demo. \
+    --output=m$GCP_ACCOUNT:beam_demo. \
     --input_subscription=projects/matthias-sandbox/subscriptions/frontend-log \
-    --output_subscription=projects/gde-front-end/topics/languages \
+    --output_subscription=projects/$GCP_ACCOUNT/topics/languages \
     --runner=DataflowRunner \
-    --project=matthias-sandbox \
+    --project=$GCP_ACCOUNT \
     --region=asia-southeast1 \
     --temp_location=gs://mb-beam-demo/
+    --serviceAccount=$SA_NAME@$GCP_ACCOUNT.iam.gserviceaccount.com
 ```
