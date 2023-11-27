@@ -48,12 +48,14 @@ def run(argv=None):
     message_table = 'logs'
     messages = (p
                 | 'Read from PubSub' >>
-                beam.io.ReadFromPubSub(subscription=known_args.input_subscription).with_output_types(bytes)
+                beam.io.ReadFromPubSub(
+                    subscription=known_args.input_subscription).with_output_types(bytes)
                 | 'Decode messages' >> beam.Map(lambda x: x.decode('utf-8'))
                 | 'Parse messages to Logs ' >> beam.ParDo(MessageToLog())
                 | 'Detect language' >> beam.ParDo(TranslateMessage(project_id))
+                )
 
-    (messages   | 'Convert Log to BigQuery records' >> beam.Map(json_to_bqrecords.json_to_bqrecord)
+    (messages | 'Convert Log to BigQuery records' >> beam.Map(json_to_bqrecords.json_to_bqrecord)
                 | 'Write Logs to BigQuery' >> beam.io.WriteToBigQuery(
                        known_args.output + message_table,
                        schema=json_schema.log_table_schema,
@@ -62,44 +64,44 @@ def run(argv=None):
 
     # Calculate aggregates per language, write to BigQuery
     language_aggregate_table = 'languages'
-    languages = (messages   | 'Extract language tuple' >> (beam.Map(lambda x: (x.translate_language, x)))
-                | 'Assign Fixed Windows' >> beam.WindowInto(window.FixedWindows(60, 0),
-                                                            trigger=trigger.AfterWatermark(),
-                                                            accumulation_mode=trigger.AccumulationMode.ACCUMULATING)
-                | 'GroupByKey Languages' >> beam.GroupByKey()
-                | 'Count languages' >> beam.ParDo(LanguageAggregate())
-                )
+    languages = (messages | 'Extract language tuple' >> (beam.Map(lambda x: (x.translate_language, x)))
+                 | 'Assign Fixed Windows' >> beam.WindowInto(window.FixedWindows(60, 0),
+                                                             trigger=trigger.AfterWatermark(),
+                                                             accumulation_mode=trigger.AccumulationMode.ACCUMULATING)
+                 | 'GroupByKey Languages' >> beam.GroupByKey()
+                 | 'Count languages' >> beam.ParDo(LanguageAggregate())
+                 )
 
-    (languages  | 'Convert language aggregate to BigQuery records' >> beam.Map(json_to_bqrecords
-                                                                               .language_aggregate_to_bqrecords)
-                | 'Write LanguageAggregate to BigQuery' >> beam.io.WriteToBigQuery(
-                    known_args.output + language_aggregate_table,
-                    schema=json_schema.language_table_schema,
-                    create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
-                    write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND))
+    (languages | 'Convert language aggregate to BigQuery records' >> beam.Map(json_to_bqrecords
+                                                                              .language_aggregate_to_bqrecords)
+     | 'Write LanguageAggregate to BigQuery' >> beam.io.WriteToBigQuery(
+        known_args.output + language_aggregate_table,
+        schema=json_schema.language_table_schema,
+        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
+        write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND))
 
-    (languages      | 'Convert language aggregate to PubSub message' >> beam.Map(json_to_bqrecords
-                                                                               .language_aggregate_to_pubsubmessage)
-                    | 'Encode' >> beam.Map(lambda x: json.dumps(x, ensure_ascii=False).encode('utf-8'))
-                                        .with_output_types(bytes)
-                    | 'Write LanguageAggregate to PubSub' >> beam.io.WriteToPubSub(known_args.output_subscription))
+    (languages | 'Convert language aggregate to PubSub message' >> beam.Map(json_to_bqrecords
+                                                                            .language_aggregate_to_pubsubmessage)
+     | 'Encode' >> beam.Map(lambda x: json.dumps(x, ensure_ascii=False).encode('utf-8'))
+     .with_output_types(bytes)
+     | 'Write LanguageAggregate to PubSub' >> beam.io.WriteToPubSub(known_args.output_subscription))
 
     # Calculate aggregates per user, write to
     user_aggregate_table = 'users'
-    (messages   | 'Extract user tuple' >> (beam.Map(lambda x: (x.user_id, x)))
+    (messages | 'Extract user tuple' >> (beam.Map(lambda x: (x.user_id, x)))
                 | 'Assign Sessions' >> beam.WindowInto(window.Sessions(30),
                                                        trigger=trigger.AfterWatermark(),
                                                        accumulation_mode=trigger.AccumulationMode.ACCUMULATING)
                 | 'GroupByKey Users' >> beam.GroupByKey()
                 | 'Count user' >> beam.ParDo(UserAggregate())
                 | 'Convert user aggregate to BigQuery records' >> beam.Map(json_to_bqrecords
-                                                                               .user_aggregate_to_bqrecords)
+                                                                           .user_aggregate_to_bqrecords)
                 | 'Write UserAggregate to BigQuery' >> beam.io.WriteToBigQuery(
-                known_args.output + user_aggregate_table,
-                schema=json_schema.user_table_schema,
-                create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
-                write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
-            ))
+        known_args.output + user_aggregate_table,
+        schema=json_schema.user_table_schema,
+        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
+        write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+    ))
 
     result = p.run()
     result.wait_until_finish()
