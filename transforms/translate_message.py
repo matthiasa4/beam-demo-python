@@ -24,7 +24,6 @@ class TranslateMessage(beam.DoFn):
         language_detected = self.translate_client.detect_language(
             content=element.text,
             parent=parent).languages[0]
-        logging.info("Translating message: " + element.text)
 
         yield Log(element.timestamp,
                   element.text,
